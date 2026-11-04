@@ -4,6 +4,13 @@ import {taskAction} from './agent-geometry.js';
 export const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 const smooth = v => { v = clamp(v); return v * v * (3 - 2 * v); };
 const lerp = (a, b, t) => a + (b - a) * t;
+export function measureStageWidth(overlay) {
+  // goLive hides this layer. Measure it before restoring that hidden state.
+  const display=overlay.style.display;
+  overlay.style.display='';
+  try { return overlay.getBoundingClientRect().width; }
+  finally { overlay.style.display=display; }
+}
 export function sampleKeys(keys, frame) {
   if (frame <= keys[0][0]) return keys[0][1];
   for (let i = 1; i < keys.length; i++) if (frame <= keys[i][0]) {
@@ -28,7 +35,7 @@ export function mountReplica({ root, overlay, cursors, report, forceFrame = null
   const totalHeight = root.scrollHeight;
   const maxWorld = Math.max(0, totalHeight - innerHeight);
   const vh = innerHeight;
-  const viewportWidth=overlay.getBoundingClientRect().width;
+  const viewportWidth=measureStageWidth(overlay);
   const sectionY = (id, fallback = 0) => {
     const section=root.querySelector(id);
     return (section?.querySelector('h2')||section)?.getBoundingClientRect().top ?? fallback;
