@@ -4,6 +4,7 @@ import closeIcon from './vendor/x.js';
 import { mountReplica } from './replica-engine.js';
 import { solutions, normalizeSearch } from './portfolio-content.js';
 import {bindContactForm} from './contact-form.js';
+import portfolioMarkup from './portfolio.html?raw';
 
 function Icon({ nodes=pointer }) { return createElement('svg',{viewBox:'0 0 24 24',fill:'currentColor',stroke:'currentColor',strokeWidth:1,'aria-hidden':true},nodes.map(([tag,attrs],i)=>createElement(tag,{...attrs,key:i}))); }
 function prepareLiveInteractions(root,onProject) {
@@ -48,7 +49,8 @@ function SolutionDialog({index,onClose}) {
 }
 
 export function Replica() {
-  const [html,setHtml]=useState(''),[error,setError]=useState(''),[status,setStatus]=useState({frame:1,agents:18,done:0,total:0});
+  const html=portfolioMarkup,error='';
+  const [status,setStatus]=useState({frame:1,agents:18,done:0,total:0});
   const [live,setLive]=useState(()=>matchMedia('(prefers-reduced-motion: reduce)').matches||new URLSearchParams(location.search).get('view')==='complete');
   const [tour,setTour]=useState(false),[speed,setSpeed]=useState(1),[ready,setReady]=useState(false);
   const [layoutVersion,setLayoutVersion]=useState(0);
@@ -57,7 +59,6 @@ export function Replica() {
   const forced=Number(new URLSearchParams(location.search).get('frame'))||null;
   // Preserve the exact DOM nodes being animated when the toolbar updates its counters.
   const sourceNode=useMemo(()=><div ref={source} className="reference-document" dangerouslySetInnerHTML={{__html:html}} />,[html]);
-  useEffect(()=>{const controller=new AbortController();fetch('/portfolio.html',{signal:controller.signal}).then(r=>{if(!r.ok)throw new Error('Não foi possível carregar a página.');return r.text();}).then(setHtml).catch(e=>{if(e.name!=='AbortError')setError(e.message);});return()=>controller.abort();},[]);
   useEffect(()=>{
     if(!html)return;let stop=false,cleanup,initialized=false;
     const root=source.current;
