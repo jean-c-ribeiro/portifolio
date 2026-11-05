@@ -1,6 +1,7 @@
 // Independent implementation from visual observations. No Swarm Rebuild source is included.
 import { agentColor,travelPoint,sampleCamera,typingStops,settleFrame } from './motion-math.js';
 import {taskAction} from './agent-geometry.js';
+import {contactPlan,parkPoint} from './contact-motion.js';
 export const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 const smooth = v => { v = clamp(v); return v * v * (3 - 2 * v); };
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -43,18 +44,27 @@ export function mountReplica({ root, overlay, cursors, report, forceFrame = null
   const camera = [[1,0],[5,0],[6,vh*.38],[9,sectionY('#portfolio')-vh*.55],[10,sectionY('#portfolio')-240],[11,sectionY('#portfolio')-140],[12,sectionY('#portfolio')-90],[14,sectionY('#portfolio')+120],[17,sectionY('#awards')-vh*.78],[18,sectionY('#awards')-vh*.6],[21,sectionY('#awards')-vh*.25],[24,sectionY('.breakdown')-vh*.85],[28,sectionY('.breakdown')-vh*.2],[30,sectionY('#about')-vh*.7],[31,sectionY('#about')-vh*.55],[33,sectionY('#about')-vh*.39],[35,sectionY('#about')-vh*.26],[38,sectionY('#about')-66],[39,sectionY('#about')+vh*.16],[40,sectionY('#experience')-vh*.85],[41,sectionY('#experience')-vh*.67],[43,sectionY('#experience')-vh*.45],[45,sectionY('#experience')+80],[47,sectionY('#contact')-vh*.9],[49,sectionY('#contact')-vh*.74],[51,sectionY('#contact')-vh*.58],[53,maxWorld],[56,maxWorld]].map(([f,y]) => [f,clamp(y,0,maxWorld)]);
   // The source is a sampled recording. These anchors correspond to observed section entrances.
   for (let i = 1; i < camera.length; i++) camera[i][1] = Math.max(camera[i-1][1],camera[i][1]);
+  // Follow the form in a separate pass, rather than rushing to the footer.
+  const form=root.querySelector('#project-request'),message=root.querySelector('#lead-message'),submit=root.querySelector('#contact-form button[type="submit"]');
+  if(form&&message&&submit){
+    const contactCamera=[[49,form.getBoundingClientRect().top-vh*.18],[50.8,root.querySelector('#lead-company').getBoundingClientRect().top-vh*.34],[52.4,message.getBoundingClientRect().top-vh*.3],[54,submit.getBoundingClientRect().top-vh*.72],[55,maxWorld],[56,maxWorld]];
+    camera.splice(camera.findIndex(([f])=>f>=49),camera.length,...contactCamera.map(([f,y])=>[f,clamp(y,0,maxWorld)]));
+    for(let i=1;i<camera.length;i++)camera[i][1]=Math.max(camera[i-1][1],camera[i][1]);
+  }
   const windows = [[1.8,4.5],[7.5,14.5],[16,21.5],[23.5,27],[29.5,36.5],[39,44.8],[47,51.3]];
   const candidates = new Set();
   const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   while (textWalker.nextNode()) {
     const node = textWalker.currentNode;
-    if (!node.textContent.trim() || node.parentElement.closest('svg,style,script,.image-fallback')) continue;
+    if (!node.textContent.trim() || node.parentElement.closest('svg,style,script,option,.image-fallback')) continue;
     let el = node.parentElement.closest(blockText) || node.parentElement;
+    el=node.parentElement.closest('.lead-label-text')||el;
     // A badge inside an image button must not swallow the image's independent insertion task.
     if(el.querySelector('img,svg'))el=node.parentElement;
     if (el !== root) candidates.add(el);
   }
   root.querySelectorAll('img,svg').forEach(el => candidates.add(el));
+  root.querySelectorAll('#contact-form input:not([type="hidden"]),#contact-form select,#contact-form textarea').forEach(el=>candidates.add(el));
   const contentNodes = [...candidates].filter(el => ![...candidates].some(parent => parent !== el && parent.contains(el)));
   const tasks = [];
   function add(el, kind) {
@@ -78,10 +88,19 @@ export function mountReplica({ root, overlay, cursors, report, forceFrame = null
     if(project){const index=[...root.querySelectorAll('.project-card')].indexOf(project);desired=(kind==='media'?8.8:10.3)+index*.65;duration=kind==='media'?1.55:.85;}
     if(el.matches('#portfolio h2,#portfolio .eyebrow')){desired=6.1;duration=.8;}
     if(el.matches('.brand-logo img')){const index=[...root.querySelectorAll('.brand-logo img')].indexOf(el);desired=13.5+index*.12;duration=1.1;}
+    let contact;
+    const controls=['lead-name','lead-email','lead-company','lead-type','lead-message'];
+    const fieldIndex=controls.indexOf(el.matches('.lead-label-text')?el.closest('label').querySelector('input,select,textarea')?.id:el.id);
+    if(fieldIndex>=0)contact=contactPlan(fieldIndex,el.matches('.lead-label-text')?'label':'field');
+    else if(el.matches('.lead-heading h3'))contact=contactPlan(0,'heading');
+    else if(el.matches('.lead-heading p'))contact=contactPlan(0,'intro');
+    else if(el.matches('#contact-form button'))contact=contactPlan(0,'submit');
+    else if(el.matches('#contact-form .form-note'))contact=contactPlan(0,'note');
+    if(contact){desired=contact.start;duration=contact.duration;}
     desired=Math.max(2.15,desired);
-    tasks.push({ el,kind,r,desired,duration,start:desired,end:desired+duration,agent:0,header:!!el.closest('header'),font:parseFloat(css.fontSize),line:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.4,descendants:[...el.querySelectorAll('*')] });
+    tasks.push({ el,kind,r,contact,desired,duration,start:desired,end:desired+duration,agent:0,header:!!el.closest('header'),font:parseFloat(css.fontSize),line:parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.4,descendants:[...el.querySelectorAll('*')] });
   }
-  for (const el of contentNodes) add(el, el.matches('img,svg') ? 'media' : 'text');
+  for (const el of contentNodes) add(el, el.matches('img,svg,input,select,textarea') ? 'media' : 'text');
   const contentSet = new Set(contentNodes);
   for (const el of nodes) {
     if (contentSet.has(el) || el.closest('svg') || ['IMG','PATH','INPUT'].includes(el.tagName)) continue;
@@ -116,6 +135,7 @@ export function mountReplica({ root, overlay, cursors, report, forceFrame = null
     let agent = 0;
     const cost=i=>{const previous=jobs[i].at(-1),distance=previous?Math.hypot(previous.r.left-task.r.left,previous.r.top-task.r.top):0;const preference=['text','media','rect'][i%3]===task.kind?0:.06;return Math.max(task.desired,free[i]+.16)+Math.min(.25,distance/(innerWidth+vh)*.2)+preference;};
     for (let i=1;i<active;i++) if (cost(i)<cost(agent)) agent=i;
+    if(task.contact)agent=task.contact.agent;
     task.agent=agent;task.start=Math.max(task.desired,free[agent]+.16);task.end=Math.min(55,task.start+task.duration*(.94+(agent%7)*.02));
     if(task.end<=task.start)task.start=task.end-.2;
     free[agent]=task.end;jobs[agent].push(task);
@@ -155,19 +175,23 @@ export function mountReplica({ root, overlay, cursors, report, forceFrame = null
       }
       prev=taskPoint(task,1);previousEnd=task.end;
     }
-    const u=clamp((frame-53)/3),a=agent*.73+frame*.36;
-    const elapsed=Math.max(0,frame-previousEnd),drift=smooth(elapsed/.4)*(1-smooth((elapsed-1.7)/.7));
-    const idle={x:prev.x+Math.sin(elapsed*2+agent)*4*drift,y:prev.y+Math.sin(elapsed*1.6)*4*drift};
-    const radius=Math.min(90,viewportWidth*.17);
-    const p=travelPoint(idle,{x:viewportWidth*.78+Math.cos(a)*radius,y:vh*.3+Math.sin(a*1.2)*75},u,agent);
-    return {...p,rotation:Math.sin(a)*8,mode:'arrow',color,phase:u>0?'flock':'wait',opacity:u>0?1:.45};
+    const u=clamp((frame-previousEnd)/.9),destination=parkPoint(agent,viewportWidth,vh);
+    const p=travelPoint(prev,destination,u,agent);
+    return {...p,rotation:destination.rotation*smooth(u),mode:'arrow',color,phase:u>=1?'park':'return',opacity:u>=1?.65:.9};
+  }
+  function renderParked(){
+    for(let i=0;i<cursors.length;i++){
+      const point=parkPoint(i,viewportWidth,vh),el=cursors[i];
+      el.style.display='block';el.dataset.mode='arrow';el.dataset.phase='park';el.dataset.task='';el.style.color=agentColor(i);el.style.opacity='.65';
+      el.style.transform=`translate(${point.x}px,${point.y}px) rotate(${point.rotation}deg)`;
+    }
   }
   function render(frame) {
     if(disposed)return;
     currentFrame=clamp(frame,1,56);world=sampleCamera(camera,currentFrame);
     root.dataset.animationFrame=String(currentFrame);
     root.dataset.connectedLayers=String(nodes.filter(el=>el.isConnected).length);
-    if(live) {root.style.transform='';root.style.setProperty('--world-y','0px');return;}
+    if(live) {root.style.transform='';root.style.setProperty('--world-y','0px');renderParked();return;}
     root.style.transform=`translateY(${-world}px)`;root.style.setProperty('--world-y',`${world}px`);
     let done=0;
     for(const el of nodes)el.style.visibility='hidden';
@@ -208,7 +232,7 @@ export function mountReplica({ root, overlay, cursors, report, forceFrame = null
   function tick(now){request=null;if(disposed||live)return;const next=settleFrame(currentFrame,targetFrame,lastTick?now-lastTick:16);lastTick=now;render(next);if(next!==targetFrame)request=requestAnimationFrame(tick);}
   const scrollFrame=()=>1+55*clamp(scrollY/Math.max(1,document.documentElement.scrollHeight-innerHeight));
   function update(){if(live||forceFrame)return;targetFrame=scrollFrame();if(!request){lastTick=0;request=requestAnimationFrame(tick);}}
-  function goLive(){live=true;cancelAnimationFrame(request);request=null;restore();root.style.transform='';root.style.setProperty('--world-y','0px');cursors.forEach(el=>el.style.display='none');overlay.style.display='none';return world;}
-  if(!finished){overlay.style.display='';nodes.forEach(el=>el.style.visibility='hidden');targetFrame=forceFrame||scrollFrame();render(targetFrame);addEventListener('scroll',update,{passive:true});}else restore();
+  function goLive(){live=true;cancelAnimationFrame(request);request=null;restore();root.style.transform='';root.style.setProperty('--world-y','0px');overlay.style.display='none';renderParked();return world;}
+  if(!finished){overlay.style.display='';nodes.forEach(el=>el.style.visibility='hidden');targetFrame=forceFrame||scrollFrame();render(targetFrame);addEventListener('scroll',update,{passive:true});}else {restore();renderParked();}
   return {render,goLive,frame:()=>currentFrame,destroy(){disposed=true;cancelAnimationFrame(request);removeEventListener('scroll',update);restore();root.style.transform='';root.style.setProperty('--world-y','0px');}};
 }

@@ -74,8 +74,11 @@ export function Replica() {
   useEffect(()=>{let pending;function resize(){clearTimeout(pending);pending=setTimeout(()=>setLayoutVersion(v=>v+1),150);}addEventListener('resize',resize);document.fonts.addEventListener('loadingdone',resize);return()=>{clearTimeout(pending);removeEventListener('resize',resize);document.fonts.removeEventListener('loadingdone',resize);};},[]);
   useEffect(()=>{if(!tour||live)return;let last,frame;function tick(now){if(last){window.scrollBy({top:(now-last)*.15*speed,behavior:'instant'});}last=now;if(scrollY+innerHeight>=document.documentElement.scrollHeight-2){setTour(false);return;}frame=requestAnimationFrame(tick);}frame=requestAnimationFrame(tick);return()=>cancelAnimationFrame(frame);},[tour,speed,live]);
   function finish(){setTour(false);const y=engine.current?.goLive()||0;setLive(true);requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'instant'}));}
+  useEffect(()=>{if(!live&&ready&&!forced&&status.frame>=55.98)finish();},[live,ready,forced,status.frame]);
   function replay(){
     setTour(false);setSelected(null);
+    // Clear the completed frame before enabling the automatic-finish watcher again.
+    setStatus(current=>({...current,frame:forced||1,done:0}));
     const root=source.current;
     root?.querySelectorAll('.project-card').forEach(card=>card.hidden=false);
     root?.querySelectorAll('.filters button').forEach(button=>{const active=button.dataset.category==='all';button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active));});
