@@ -7,7 +7,7 @@ Portfólio em português com construção reversível controlada pela rolagem: a
 Node.js 22 ou superior. Execute `npm ci`, `npm run dev`, `npm test` e `npm run build`.
 O Vite gera os arquivos publicáveis em `dist/client`. Para o domínio `logicacode.com.br`, publique o conteúdo dessa pasta na raiz do GitHub Pages, preservando o arquivo `CNAME`.
 
-O formulário prepara um rascunho de e-mail para revisão; ele não envia mensagens. As imagens de soluções são ilustrações conceituais, identificadas na página. O retrato foi fornecido pelo proprietário e ampliado para a composição aprovada.
+O formulário envia solicitações pelo endpoint Formspree já utilizado no site original (`meaoaayd`), com nome, e-mail de retorno, empresa, interesse e mensagem. A interface só confirma o envio após resposta de sucesso; falhas preservam os dados para nova tentativa. O destinatário é configurado na conta Formspree do proprietário. As imagens de soluções são ilustrações conceituais, identificadas na página. O retrato foi fornecido pelo proprietário e ampliado para a composição aprovada.
 
 ## Referências e dependências
 

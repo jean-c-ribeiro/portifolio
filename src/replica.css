@@ -32,3 +32,21 @@ html{scroll-behavior:auto!important}body{overflow-anchor:none}.replica-shell{pos
 @media(max-width:700px){.trace-toolbar{gap:5px}.trace-avatars{display:none}.trace-toolbar button{font-size:8px;padding:5px}.trace-count,.trace-layer-count{font-size:8px}.technology-list{gap:18px;font-size:17px}.solution-dialog-copy{padding:22px}.hero-top>span:first-child{font-size:9px}.hero-bottom .reel-button{font-size:10px}.working-note{margin-top:30px}}
 @media(max-width:700px){.recognition-intro{display:block}.recognition-intro>p{margin:18px 0}.recognition-intro .text-link{white-space:normal;max-width:100%}.quote-panel{margin-inline:0;grid-template-columns:24px 1fr;min-height:0;padding:24px;gap:14px}.quote-panel blockquote{font-size:22px}.quote-panel>.handwriting{grid-column:2;justify-self:start;transform:none;font-size:34px}.quote-panel .quote-bottom{grid-column:2}.project-caption h3{white-space:normal;overflow:visible;line-height:1.4}}
 @media(prefers-reduced-motion:reduce){.trace-cursor,.trace-selection>b{animation:none!important}.replica-scroll-space{display:none}}
+.lead-contact{padding-top:38px;scroll-margin-top:100px}
+.lead-heading{display:flex;justify-content:space-between;align-items:start;gap:30px;margin-bottom:28px}
+.lead-heading h3{font-size:clamp(26px,3vw,38px);font-weight:600;letter-spacing:-.04em;line-height:1.2;max-width:16ch}
+.lead-heading p{font-size:14px;line-height:1.8;color:var(--muted);max-width:42ch}
+.lead-contact form{grid-template-columns:1fr 1fr;gap:24px;padding:0}
+.lead-contact label{font-size:13px;color:var(--ink);gap:9px}
+.lead-contact label>span{font-size:11px;color:var(--muted)}
+.lead-contact input,.lead-contact textarea,.lead-contact select{font:400 16px/1.5 var(--body);background:#141414;border:1px solid #444;padding:14px 16px}
+.lead-contact :is(input,textarea,select):focus-visible{outline:2px solid var(--red);outline-offset:3px}
+.lead-contact .brief-message,.lead-submit,.lead-status{grid-column:1/-1}
+.lead-trap{display:none}
+.lead-submit{display:flex;align-items:center;gap:28px}
+.lead-submit button{font:600 15px var(--body);padding:17px 26px;min-height:52px;flex-shrink:0}
+.lead-submit button:disabled{opacity:.65;cursor:wait}
+.lead-submit .form-note{font-size:12px;line-height:1.7;max-width:48ch;color:var(--muted)}
+.lead-status{font-size:14px;line-height:1.7;margin:0;min-height:24px}
+.lead-status[data-state="success"]{color:#a9e4bd}.lead-status[data-state="error"]{color:#ffb5b5}
+@media(max-width:700px){.lead-heading{display:block}.lead-heading p{margin-top:18px}.lead-contact form{grid-template-columns:1fr}.lead-submit{align-items:stretch;flex-direction:column;gap:15px}.lead-contact{padding-top:28px}.lead-submit button{width:100%}}

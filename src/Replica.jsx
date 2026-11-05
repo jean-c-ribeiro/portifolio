@@ -2,7 +2,8 @@ import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import pointer from './vendor/mouse-pointer-2.js';
 import closeIcon from './vendor/x.js';
 import { mountReplica } from './replica-engine.js';
-import { solutions, normalizeSearch, projectEmail } from './portfolio-content.js';
+import { solutions, normalizeSearch } from './portfolio-content.js';
+import {bindContactForm} from './contact-form.js';
 
 function Icon({ nodes=pointer }) { return createElement('svg',{viewBox:'0 0 24 24',fill:'currentColor',stroke:'currentColor',strokeWidth:1,'aria-hidden':true},nodes.map(([tag,attrs],i)=>createElement(tag,{...attrs,key:i}))); }
 function prepareLiveInteractions(root,onProject) {
@@ -35,9 +36,9 @@ function prepareLiveInteractions(root,onProject) {
     if(event.target.matches('input[type="range"]')){const val=event.target.value;const comparison=event.target.closest('.comparison-stage');if(comparison)comparison.style.setProperty('--cut',`${val}%`);event.target.setAttribute('aria-valuetext',`${val}% solid`);}
     if(event.target.matches('input[type="search"]')){query=event.target.value;filterProjects();}
   }
-  function preventSubmission(e){e.preventDefault();const data=new FormData(e.target),status=e.target.querySelector('[role="status"]');status.replaceChildren(document.createTextNode('Rascunho preparado. '));const draft=document.createElement('a');draft.textContent='Revisar no meu aplicativo de e-mail';draft.href=projectEmail({name:data.get('name'),type:data.get('type'),message:data.get('message')});status.append(draft);}
-  root.addEventListener('click',click);root.addEventListener('input',input);root.addEventListener('submit',preventSubmission);
-  return()=>{root.removeEventListener('click',click);root.removeEventListener('input',input);root.removeEventListener('submit',preventSubmission);mobileMenu?.remove();};
+  const cleanupContact=bindContactForm(root.querySelector('#contact-form'));
+  root.addEventListener('click',click);root.addEventListener('input',input);
+  return()=>{root.removeEventListener('click',click);root.removeEventListener('input',input);cleanupContact();mobileMenu?.remove();};
 }
 
 function SolutionDialog({index,onClose}) {
